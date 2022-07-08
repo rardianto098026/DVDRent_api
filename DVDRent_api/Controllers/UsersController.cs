@@ -69,7 +69,7 @@ namespace DVDRent_api.Controllers
             try
             {
                 emp.password = BCrypt.Net.BCrypt.HashPassword(emp.password);
-                string query = "EXEC SP_ADD_EMPLOYEE @firstname = '" + emp.firstname + "', @lastname = '" + emp.lastname + "', @email = '" + emp.email + "' , @phone = '" + emp.phone + "' , @address = '" + emp.address + "' , @address2 = '" + emp.address2 + "' , @gender = '" + emp.gender + "' , @password = '" + emp.password + "' , @store = '" + emp.store + "' , @position = '" + emp.position +"'";
+                string query = "EXEC SP_ADD_EMPLOYEE @firstname = '" + emp.firstname + "', @lastname = '" + emp.lastname + "', @email = '" + emp.email + "' , @phone = '" + emp.phone + "' , @address = '" + emp.address + "' , @address2 = '" + emp.address2 + "' , @gender = '" + emp.gender + "' , @password = '" + emp.password + "' , @store = '" + emp.store + "' , @position = '" + emp.position +"', @picture_URL = '"+ emp.picture_URL +"'";
                 Common.ExecuteNonQuery(query);
                 var message = Request.CreateResponse(HttpStatusCode.Created, emp);
                 message.Headers.Location = new Uri(Request.RequestUri + emp.firstname.ToString());
@@ -198,6 +198,7 @@ namespace DVDRent_api.Controllers
             public string phone { get; set; }
             public string email { get; set; }
             public string address { get; set; }
+            public string picture_URL { get; set; }            
             public string address2 { get; set; }
             public string gender { get; set; }
             public string password { get; set; }

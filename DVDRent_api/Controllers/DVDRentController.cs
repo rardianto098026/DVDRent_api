@@ -13,39 +13,6 @@ namespace DVDRent_api.Controllers
     [RoutePrefix("api/DVDRent")]
     public class DVDRentController : ApiController
     {
-        //[HttpGet]
-        //public DataTable GetTrending()
-        //{
-        //    DataTable dtTrending = new DataTable();
-        //    try
-        //    {
-        //        string query = "SELECT * FROM [user] where email = '" + user_class.email + "'";
-        //        dtlogin = Common.ExecuteQuery("SELECT * FROM [user] where email = '" + user_class.email + "'");
-        //        try
-        //        {
-        //            verified = BCrypt.Net.BCrypt.Verify(user_class.password, dtlogin.Rows[0]["password"].ToString());
-        //            if (!verified)
-        //            {
-        //                return Request.CreateErrorResponse(HttpStatusCode.Unauthorized, "incorrect username or password");
-        //            }
-        //            var message = Request.CreateResponse(HttpStatusCode.OK);
-        //            return message;
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            string eror = Convert.ToString(ex);
-        //            return Request.CreateErrorResponse(HttpStatusCode.BadRequest, ex);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
-        //        {
-        //            Content = new StringContent(Convert.ToString(ex.Message))
-        //        };
-        //        throw new HttpResponseException(message);
-        //    }
-        //}
         [HttpGet]
         [Route("GetCustomer")]
         public JsonResult<DataTable> GetCustomer()
@@ -92,6 +59,26 @@ namespace DVDRent_api.Controllers
             try
             {
                 string query = "EXEC SP_GET_MOVIE_ADMIN";
+                dtMovie = Common.ExecuteQuery(query);
+                return Json(dtMovie);
+            }
+            catch (Exception ex)
+            {
+                var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(Convert.ToString(ex.Message))
+                };
+                throw new HttpResponseException(message);
+            }
+        }
+        [HttpGet]
+        [Route("GetDetailMovie")]
+        public JsonResult<DataTable> GetDetailMovie(int id)
+        {
+            DataTable dtMovie = new DataTable();
+            try
+            {
+                string query = "SELECT * FROM Movie A LEFT JOIN MovieGenre B ON A.Id = B.MovieID where A.ID = "+ id +"";
                 dtMovie = Common.ExecuteQuery(query);
                 return Json(dtMovie);
             }
@@ -161,6 +148,7 @@ namespace DVDRent_api.Controllers
             }
         }
 
+        [HttpGet]
         [Route("LoadGenre")]
         public JsonResult<DataTable> LoadGenre()
         {
@@ -179,6 +167,127 @@ namespace DVDRent_api.Controllers
                 };
                 throw new HttpResponseException(message);
             }
+        }
+
+        [HttpGet]
+        [Route("LoadDDLmovie")]
+        public JsonResult<DataTable> LoadDDLmovie()
+        {
+            DataTable dtStore = new DataTable();
+            try
+            {
+                string query = "select * from Movie";
+                dtStore = Common.ExecuteQuery(query);
+                return Json(dtStore);
+            }
+            catch (Exception ex)
+            {
+                var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(Convert.ToString(ex.Message))
+                };
+                throw new HttpResponseException(message);
+            }
+        }
+
+        [HttpGet]
+        [Route("LoadDDLstatusMovie")]
+        public JsonResult<DataTable> LoadDDLstatusMovie()
+        {
+            DataTable dtStore = new DataTable();
+            try
+            {
+                string query = "select * from Status";
+                dtStore = Common.ExecuteQuery(query);
+                return Json(dtStore);
+            }
+            catch (Exception ex)
+            {
+                var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(Convert.ToString(ex.Message))
+                };
+                throw new HttpResponseException(message);
+            }
+        }
+
+        [HttpPost]
+        [Route("AddMovie")]
+        public HttpResponseMessage AddMovie([FromBody] AddModifyMovie mov)
+        {
+            try
+            {
+                string query = "EXEC [SP_ADD_MOVIE] '"+ mov.Title + "', '" + mov.Description + "', '" + mov.ReleaseYear + "', '" + mov.Duration + "', '" + mov.AgeRating + "', '" + mov.PictureURL + "', '" + mov.TrailerURL + "'";
+                DataTable getID = Common.ExecuteQuery(query);
+
+                foreach(var genreItem in mov.Genre)
+                {
+                    query = "EXEC [SP_ADD_MOVIE_GENRE] '" + getID.Rows[0][0].ToString() + "', '" + genreItem + "'";
+                    Common.ExecuteNonQuery(query);
+                }
+                
+                var message = Request.CreateResponse(HttpStatusCode.Created, mov);
+                message.Headers.Location = new Uri(Request.RequestUri + mov.Title.ToString());
+
+                return message;
+            }
+            catch (Exception ex)
+            {
+                var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(Convert.ToString(ex.Message))
+                };
+                throw new HttpResponseException(message);
+            }
+        }
+
+        [HttpPut]
+        [Route("UpdateMovie")]
+        public HttpResponseMessage UpdateMovie(int mov_id, [FromBody] AddModifyMovie mov)
+        {
+            try
+            {
+                string query = "EXEC [SP_UPDATE_MOVIE] '" + mov.Title + "', '" + mov.Description + "', '" + mov.ReleaseYear + "', '" + mov.Duration + "', '" + mov.AgeRating + "', '" + mov.PictureURL + "', '" + mov.TrailerURL + "', '"+ mov_id + "'";
+                Common.ExecuteNonQuery(query);
+
+                foreach (var genreItem in mov.TambahGenre)
+                {
+                    query = "EXEC [SP_UPDATE_MOVIE_GENRE] '" + mov_id + "', '" + genreItem + "', 'TAMBAH'";
+                    Common.ExecuteNonQuery(query);
+                }
+
+                foreach (var genreItem in mov.KurangGenre)
+                {
+                    query = "EXEC [SP_UPDATE_MOVIE_GENRE] '" + mov_id + "', '" + genreItem + "', 'KURANG'";
+                    Common.ExecuteNonQuery(query);
+                }
+
+                var message = Request.CreateResponse(HttpStatusCode.Created, mov);
+                message.Headers.Location = new Uri(Request.RequestUri + mov.Title.ToString());
+
+                return message;
+            }
+            catch (Exception ex)
+            {
+                var message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(Convert.ToString(ex.Message))
+                };
+                throw new HttpResponseException(message);
+            }
+        }
+        public class AddModifyMovie
+        {
+            public string Title { get; set; }
+            public string Description { get; set; }
+            public string ReleaseYear { get; set; }
+            public string Duration { get; set; }
+            public string[] Genre { get; set; }
+            public string[] TambahGenre { get; set; }
+            public string[] KurangGenre { get; set; }
+            public string AgeRating { get; set; }
+            public string PictureURL { get; set; }
+            public string TrailerURL { get; set; }
         }
     }
 }
